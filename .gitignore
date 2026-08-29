@@ -1,0 +1,3 @@
+checkpoints/*
+sample datasets/triplet_dataset_v3.csv
+sample datasets/item_embeddings_50k.pkl
