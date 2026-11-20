@@ -61,7 +61,7 @@ Generated via **Residual-Quantized Variational Autoencoders (RQ-VAE)**, Semantic
 Quantizing 50,015 products into discrete codes naturally causes near-identical items (e.g., 500ml vs 1L variants, or different brands of identical products) to share the same base code $(c_0, c_1, c_2)$:
 * **Base Unique IDs**: 20,795 unique tuples for 50,015 products.
 * **Deterministic Suffix Disambiguation**: For every collision cluster sharing $(c_0, c_1, c_2)$, products are sorted deterministically and assigned an incremental suffix index $i \ge 0$:
-  $$\text{Semantic ID} = c_0\_c_1\_c_2\_i$$
+  `Semantic ID = <code_0>_<code_1>_<code_2>_<suffix>` (e.g. `122_75_38_0`)
 * **Result**: **0.00% collisions (100% unique IDs across all 50,015 items)** while strictly preserving cluster identity $(c_0, c_1, c_2)$ for instant substitute masking.
 
 ### Concrete Examples
@@ -91,9 +91,9 @@ Evaluated on gold/silver complementary test sets across the entire 50,029-item c
 
 ### How Semantic Hybrid Search Solved the Plateau:
 Candidates are scored and fused using **Reciprocal Rank Fusion (RRF, $k=60$)**:
-$$\text{Score}(c) = \frac{\alpha_{\text{semantic\_id}}}{60 + \text{rank}_{\text{sem}}(c)} + \frac{\alpha_{\text{dense}}}{60 + \text{rank}_{\text{dense}}(c)} + \frac{\alpha_{\text{graph}}}{60 + \text{rank}_{\text{graph}}(c)}$$
+$$\text{Score}(c) = \frac{\alpha_{\text{sem}}}{60 + \text{rank}_{\text{sem}}(c)} + \frac{\alpha_{\text{dense}}}{60 + \text{rank}_{\text{dense}}(c)} + \frac{\alpha_{\text{graph}}}{60 + \text{rank}_{\text{graph}}(c)}$$
 
-* $\alpha_{\text{semantic\_id}} = 0.40$: Discrete $(c_0, c_1)$ cluster transitions + strict base-ID substitute filter.
+* $\alpha_{\text{sem}} = 0.40$: Discrete $(c_0, c_1)$ cluster transitions + strict base-ID substitute filter.
 * $\alpha_{\text{dense}} = 0.35$: Two-Tower v5 continuous neural projections for fine-grained ranking.
 * $\alpha_{\text{graph}} = 0.25$: Empirical co-purchase graph priors (Gold/Silver/Bronze tiers).
 
