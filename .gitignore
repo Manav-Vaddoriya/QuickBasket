@@ -1,3 +1,14 @@
 checkpoints/*
 sample datasets/triplet_dataset_v3.csv
 sample datasets/item_embeddings_50k.pkl
+sample datasets/final_pair_data(2).csv
+reports/*
+scratch/*
+tests/*
+models/*
+__pycache__/
+**/__pycache__/**
+*.pyc
+**/*.pyc
+.pytest_cache/
+**/.pytest_cache/**

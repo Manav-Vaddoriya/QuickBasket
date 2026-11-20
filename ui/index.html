@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickBasket — Zepto-Style Neural Re-Ranker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Zepto-Style Top Navigation Bar -->
+  <header class="zepto-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="zepto-logo">
+          <span class="logo-lightning">⚡</span>
+          <div class="logo-text">
+            <span class="logo-brand">quickbasket</span>
+            <span class="logo-sub">10 min delivery</span>
+          </div>
+        </div>
+
+        <div class="delivery-pill">
+          <span class="pulse-dot"></span>
+          <div class="delivery-text">
+            <strong>Delivery in 8 Mins</strong>
+            <span>Sector 62, Noida</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Search -->
+      <div class="header-search">
+        <span class="search-ico">🔍</span>
+        <input type="text" id="globalSearchInput" placeholder="Search across 50,000 grocery items..." autocomplete="off">
+        <div id="searchDropdown" class="search-drop hidden"></div>
+      </div>
+
+      <!-- Header Right: Model Picker & Cart Counter -->
+      <div class="header-right">
+        <div class="retrieval-engine-badge" id="headerEngineBadge" style="display: flex; align-items: center; gap: 6px; background: rgba(99, 102, 241, 0.18); border: 1px solid rgba(99, 102, 241, 0.45); padding: 6px 12px; border-radius: 9999px; font-size: 0.8rem; color: #c7d2fe; font-weight: 600;">
+          <span style="color: #38bdf8;">🧬</span>
+          <span id="headerEngineBadgeText">Retrieval: Hybrid Semantic ID (RQ-VAE + Two-Tower + Graph)</span>
+        </div>
+
+        <div class="model-badge-box">
+          <label for="modelSelect">Re-Ranker:</label>
+          <select id="modelSelect" class="zepto-select">
+            <option value="model_1_cross_mlp_v3" selected>Model 1 (v3): Interaction Cross-MLP (Active)</option>
+            <option value="model_3_transformer_v3">Model 3 (v3): List-Aware Transformer</option>
+            <option value="model_2_dual_tower_v3">Model 2 (v3): Dual-Tower Bilinear</option>
+            <option value="model_1_cross_mlp">Model 1 (v2 Legacy): Cross-MLP</option>
+            <option value="model_3_transformer">Model 3 (v2 Legacy): Transformer</option>
+          </select>
+        </div>
+
+        <div class="zepto-cart-btn" id="viewCartBtn">
+          <span class="cart-ico">🛒</span>
+          <div class="cart-details">
+            <span class="cart-items-count" id="headerCartCount">0 Items</span>
+            <span class="cart-total-price" id="headerCartTotal">₹0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="zepto-container">
+
+    <!-- Active Cart Bar (Shows items in cart) -->
+    <section class="cart-bar-section" id="cartBarSection">
+      <div class="cart-bar-inner">
+        <div class="cart-bar-title">
+          <span class="cart-pulse-icon">🧺</span>
+          <div>
+            <h3>Your Shopping Cart (<span id="cartCountBadge">0</span>)</h3>
+            <p>Add items below. Retrieval (Top 5 per item) & Re-Ranking trigger automatically!</p>
+          </div>
+        </div>
+
+        <div class="cart-items-row" id="cartItemsRow">
+          <p class="empty-cart-note">Your cart is empty. Add an item from preview or dropdown below to start!</p>
+        </div>
+
+        <div class="cart-bar-controls">
+          <div class="retrieval-mode-selector">
+            <span class="selector-label">Retrieval Mode:</span>
+            <div class="mode-pill-toggle" id="retrievalModeToggle">
+              <button type="button" class="mode-pill-btn active" id="btnModeHybrid" title="SOTA Hybrid Search: RQ-VAE Semantic IDs + Two-Tower + Graph RRF (Zero Substitute Leakage!)">
+                <span class="pill-sparkle">🧬</span> Hybrid Semantic ID (SOTA)
+              </button>
+              <button type="button" class="mode-pill-btn" id="btnModeCross" title="Strictly retrieve complements from DIFFERENT categories via Two-Tower v5!">
+                <span class="pill-sparkle">✨</span> Two-Tower v5 (Cross-Category)
+              </button>
+              <button type="button" class="mode-pill-btn" id="btnModeSame" title="Retrieve similar substitutes from the SAME category!">
+                <span class="pill-sparkle">🔄</span> Same-Category (Substitutes)
+              </button>
+            </div>
+          </div>
+          <button id="clearCartBtn" class="clear-cart-btn" style="display: none;">Clear Cart</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. POPULAR ESSENTIALS PREVIEW -->
+    <section class="shelf-section">
+      <div class="section-heading">
+        <div class="heading-left">
+          <span class="section-tag">Quick Add</span>
+          <h2>Popular Essentials — Preview Shelf</h2>
+        </div>
+        <span class="sub-hint">Click "+ ADD" on any item to instantly trigger Top-5 retrieval and re-ranking</span>
+      </div>
+
+      <div class="preview-cards-grid" id="previewGrid">
+        <div class="loading-state">Loading preview essentials...</div>
+      </div>
+    </section>
+
+    <!-- 2. CATEGORY DROPDOWN & SPECIFIC ITEM SELECTOR -->
+    <section class="shelf-section selector-shelf">
+      <div class="section-heading">
+        <div class="heading-left">
+          <span class="section-tag section-tag-purple">Browse Catalog</span>
+          <h2>Select by Category & Item</h2>
+        </div>
+        <span class="sub-hint">Choose category ➔ pick specific item ➔ click "Add to Cart"</span>
+      </div>
+
+      <div class="dropdown-selector-card">
+        <div class="selector-row">
+          
+          <!-- Category Dropdown -->
+          <div class="selector-group">
+            <label for="categoryDropdown">1. Select Category:</label>
+            <select id="categoryDropdown" class="zepto-dropdown">
+              <option value="">Loading categories...</option>
+            </select>
+          </div>
+
+          <!-- Item Dropdown under that category -->
+          <div class="selector-group flex-2">
+            <label for="itemDropdown">2. Select Item in Category:</label>
+            <select id="itemDropdown" class="zepto-dropdown" disabled>
+              <option value="">Select a category first</option>
+            </select>
+          </div>
+
+          <!-- Add to Cart Button -->
+          <div class="selector-action">
+            <button id="addSelectedDropdownBtn" class="btn-zepto-primary" disabled>
+              <span>+ Add to Cart</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Selected Category Items Shelf -->
+        <div class="category-items-container">
+          <div class="cat-shelf-title">
+            <h4 id="categoryShelfTitle">Items in Category</h4>
+            <span id="categoryItemCount">0 items available</span>
+          </div>
+          <div class="category-cards-grid" id="categoryCardsGrid">
+            <p class="empty-hint">Select a category above to view items</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. LIVE RE-RANKING VERIFICATION STUDIO (BEFORE VS AFTER) -->
+    <section class="verification-section" id="verificationSection">
+      
+      <!-- Pre-Activation Placeholder -->
+      <div class="verification-placeholder" id="rankingPlaceholder">
+        <div class="placeholder-icon">🎯</div>
+        <h3>Add an Item to Cart to Trigger Real-Time Re-Ranking</h3>
+        <p>
+          When you add <strong>1 item</strong> to cart ➔ Top 5 candidates are retrieved & re-ranked.<br>
+          When you add <strong>2 items</strong> to cart ➔ Top 5 for each item (10 pooled items) are retrieved & re-ranked.<br>
+          The Before vs. After comparison below will verify whether ranking changed the order.
+        </p>
+      </div>
+
+      <!-- Active Comparison View -->
+      <div class="ranking-active-container hidden" id="rankingActiveContainer">
+        
+        <!-- Large Prominent Verification Status Banner -->
+        <div class="verification-banner" id="verificationBanner">
+          <div class="v-banner-left">
+            <div class="v-banner-icon" id="vBannerIcon">🚀</div>
+            <div class="v-banner-text">
+              <h3 id="vBannerTitle">VERIFICATION: Re-Ranking Active & Order Changed!</h3>
+              <p id="vBannerDesc">6 out of 10 items changed positions based on the neural model.</p>
+            </div>
+          </div>
+          <div class="v-banner-right">
+            <div class="v-badge-pill" id="vShiftBadge">6 Items Shifted</div>
+            <div class="v-latency" id="vLatency">~22 ms</div>
+          </div>
+        </div>
+
+        <!-- Cross-Category Mode Status & Explanation Strip -->
+        <div class="retrieval-status-strip" id="retrievalStatusStrip">
+          <div class="status-strip-left">
+            <span class="strip-badge badge-cross" id="stripBadge">✨ Cross-Category Active</span>
+            <span class="strip-text" id="stripText">Excluding all cart categories — displaying complementary pairings from different aisles.</span>
+          </div>
+          <div class="status-strip-right">
+            <span class="strip-metric" id="stripMetric">5 / 5 Items Cross-Category (100%)</span>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Before vs After Lists -->
+        <div class="comparison-columns-wrapper">
+          
+          <!-- BEFORE RE-RANKING: Retrieval Order -->
+          <div class="comp-col before-col">
+            <div class="comp-col-header">
+              <div class="col-pill pill-retrieval" id="retrievalStagePill">Stage 1: Hybrid Semantic Retrieval (RRF)</div>
+              <h3>List Before Re-Ranking</h3>
+              <p>Top <span id="beforeItemCount">5</span> candidates retrieved via <span id="retrievalModelLabel" style="color: #60a5fa; font-weight: 600;">Two-Tower v5 (Updated FnV Model)</span></p>
+            </div>
+
+            <div class="candidates-stack" id="beforeCandidatesStack">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Divider with Visual Transformation Node -->
+          <div class="comp-divider">
+            <div class="divider-line"></div>
+            <div class="model-node">
+              <span class="m-node-ico">🧠</span>
+              <span class="m-node-label">Neural<br>Re-Ranker</span>
+            </div>
+            <div class="divider-line"></div>
+          </div>
+
+          <!-- AFTER RE-RANKING: Model Order -->
+          <div class="comp-col after-col">
+            <div class="comp-col-header">
+              <div class="col-pill pill-reranker">Stage 2: Neural Model</div>
+              <h3>List After Re-Ranking</h3>
+              <p>Re-ordered using <span id="modelNameLabel">Model 1 (Cross-MLP)</span></p>
+            </div>
+
+            <div class="candidates-stack" id="afterCandidatesStack">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Movement Breakdown Table -->
+        <div class="shift-table-card">
+          <div class="shift-card-header">
+            <h4>📋 Item-by-Item Verification Table (Are they different?)</h4>
+            <span class="table-subnote">Direct comparison of Initial Retrieval Rank vs Final Re-Ranked Position</span>
+          </div>
+
+          <div class="table-scroll">
+            <table class="shift-table">
+              <thead>
+                <tr>
+                  <th>Candidate Item</th>
+                  <th>Retrieved For</th>
+                  <th>Before (Rank)</th>
+                  <th>After (Rank)</th>
+                  <th>Shift Status</th>
+                  <th>Similarity Score</th>
+                  <th>Re-Ranker Logit</th>
+                  <th>Difference?</th>
+                </tr>
+              </thead>
+              <tbody id="shiftTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
