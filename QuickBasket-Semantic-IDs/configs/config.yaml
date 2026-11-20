@@ -1,0 +1,46 @@
+# QuickBasket Semantic ID Pipeline Configuration
+project_name: "QuickBasket-Semantic-IDs"
+seed: 42
+
+paths:
+  raw_catalog: "QuickBasket-Semantic-IDs/data/catalog_items.csv"
+  cleaned_catalog: "QuickBasket-Semantic-IDs/data/cleaned_catalogue.csv"
+  catalogue_profile: "QuickBasket-Semantic-IDs/data/catalogue_profile.csv"
+  product_texts: "QuickBasket-Semantic-IDs/data/product_texts.csv"
+  product_embeddings_minilm: "QuickBasket-Semantic-IDs/embeddings/product_embeddings_minilm.npy"
+  product_embeddings_mpnet: "QuickBasket-Semantic-IDs/embeddings/product_embeddings_mpnet.npy"
+  product_embeddings_primary: "QuickBasket-Semantic-IDs/embeddings/product_embeddings.npy"
+  embedding_metadata: "QuickBasket-Semantic-IDs/embeddings/embedding_metadata.json"
+  product_id_mapping: "QuickBasket-Semantic-IDs/embeddings/product_id_mapping.json"
+  checkpoints_dir: "QuickBasket-Semantic-IDs/checkpoints"
+  best_checkpoint: "QuickBasket-Semantic-IDs/checkpoints/rqvae_best.pt"
+  outputs_dir: "QuickBasket-Semantic-IDs/outputs"
+  category_distribution_report: "QuickBasket-Semantic-IDs/outputs/category_distribution_report.csv"
+  data_quality_report: "QuickBasket-Semantic-IDs/outputs/data_quality_report.json"
+  suspect_category_assignments: "QuickBasket-Semantic-IDs/outputs/suspect_category_assignments.csv"
+  final_semantic_ids_csv: "QuickBasket-Semantic-IDs/outputs/quickbasket_semantic_ids.csv"
+  final_semantic_ids_parquet: "QuickBasket-Semantic-IDs/outputs/quickbasket_semantic_ids.parquet"
+  training_history: "QuickBasket-Semantic-IDs/outputs/training_history.csv"
+  codebook_utilization: "QuickBasket-Semantic-IDs/outputs/codebook_utilization.csv"
+  semantic_id_evaluation: "QuickBasket-Semantic-IDs/outputs/semantic_id_evaluation.json"
+  category_semantic_id_report: "QuickBasket-Semantic-IDs/outputs/category_semantic_id_report.csv"
+
+embedding_models:
+  baseline: "sentence-transformers/all-MiniLM-L6-v2"
+  high_capacity: "sentence-transformers/all-mpnet-base-v2"
+  batch_size: 256
+  normalize_embeddings: true
+
+rqvae:
+  input_dim: 384  # Updated dynamically based on selected embedding model
+  latent_dim: 64
+  codebook_size: 128
+  quantization_levels: 3
+  batch_size: 256
+  learning_rate: 0.001
+  commitment_beta: 0.25
+  max_epochs: 150
+  patience: 15
+  grad_clip: 1.0
+  train_val_split: 0.90
+
