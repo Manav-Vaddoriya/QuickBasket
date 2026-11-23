@@ -90,8 +90,12 @@ Evaluated on gold/silver complementary test sets across the entire 50,029-item c
 | **Semantic Hybrid Search** | **Two-Tower v5 + RQ-VAE Semantic IDs + Graph RRF** | **88.7%** | **93.3%** | **0.7821** | **0.3638** | **0.00%** |
 
 ### How Semantic Hybrid Search Solved the Plateau:
-Candidates are scored and fused using **Reciprocal Rank Fusion (RRF, $k=60$)**:
-$$\text{Score}(c) = \frac{\alpha_{\text{sem}}}{60 + \text{rank}_{\text{sem}}(c)} + \frac{\alpha_{\text{dense}}}{60 + \text{rank}_{\text{dense}}(c)} + \frac{\alpha_{\text{graph}}}{60 + \text{rank}_{\text{graph}}(c)}$$
+
+Candidates are scored and fused using **Reciprocal Rank Fusion (RRF, k = 60)**:
+
+$$
+\text{Score}(c) = \frac{\alpha_{\text{sem}}}{60 + \text{rank}_{\text{sem}}(c)} + \frac{\alpha_{\text{dense}}}{60 + \text{rank}_{\text{dense}}(c)} + \frac{\alpha_{\text{graph}}}{60 + \text{rank}_{\text{graph}}(c)}
+$$
 
 * $\alpha_{\text{sem}} = 0.40$: Discrete $(c_0, c_1)$ cluster transitions + strict base-ID substitute filter.
 * $\alpha_{\text{dense}} = 0.35$: Two-Tower v5 continuous neural projections for fine-grained ranking.
